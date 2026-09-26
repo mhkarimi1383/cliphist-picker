@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -u
+set -xu
 
 list="$(cliphist list)"
 
@@ -34,4 +34,7 @@ id="${selected%%$'\t'*}"
 
 printf '%s' "$id" |
     cliphist decode |
-    wl-copy
+    wl-copy > /dev/null 2>&1
+
+wait
+exit 0
