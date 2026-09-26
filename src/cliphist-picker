@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+
+set -u
+
+list="$(cliphist list)"
+
+[[ -n "$list" ]] || exit 0
+
+selected="$(
+    printf '%s\n' "$list" |
+        fzf \
+            --no-sort \
+            --tac \
+            --layout=reverse \
+            --height=100% \
+            --border=rounded \
+            --delimiter=$'\t' \
+            --with-nth='2..' \
+            --nth='2..' \
+            --prompt='clipboard > ' \
+            --header='Enter copy  Alt-1 delete  Alt-0 wipe  Esc quit' \
+            --preview='cliphist-preview {1}' \
+            --preview-window='right,65%,border-left,wrap' \
+            --preview-label=' Preview ' \
+            --bind='alt-1:execute-silent(printf "%s" {1} | cliphist delete)+reload(cliphist list)' \
+            --bind='alt-0:execute-silent(cliphist wipe)+reload(cliphist list)' \
+            --bind='ctrl-r:reload(cliphist list)'
+)"
+
+[[ -n "$selected" ]] || exit 0
+
+id="${selected%%$'\t'*}"
+
+[[ "$id" =~ ^[0-9]+$ ]] || exit 1
+
+printf '%s' "$id" |
+    cliphist decode |
+    wl-copy

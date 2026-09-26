@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+
+set -u
+
+id="${1:-}"
+
+[[ "$id" =~ ^[0-9]+$ ]] || exit 0
+
+cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/cliphist-picker"
+mkdir -p "$cache_dir"
+
+tmp="$cache_dir/$id"
+
+trap 'rm -f "$tmp"' EXIT
+
+printf '%s' "$id" |
+    cliphist decode >"$tmp" 2>/dev/null
+
+[[ -s "$tmp" ]] || exit 0
+
+type="$(file --brief --dereference --mime -- "$tmp")"
+
+if [[ "$type" =~ image/ ]]; then
+    # fzf officially provides this script/mechanism for Kitty/Sixel preview.
+    # It needs the actual preview-window dimensions and position.
+    dim="${FZF_PREVIEW_COLUMNS:-80}x${FZF_PREVIEW_LINES:-30}"
+
+    if [[ -n "${KITTY_WINDOW_ID:-}" ]] &&
+       command -v kitten >/dev/null 2>&1; then
+
+       kitten icat \
+            --clear \
+            --transfer-mode=stream \
+            --unicode-placeholder \
+            --stdin=no \
+            --place="$dim@0x0" \
+            "$tmp" |
+            sed '$d' |
+            sed $'$s/$/\e[m/'
+
+    elif command -v chafa >/dev/null 2>&1; then
+        chafa -s "$dim" "$tmp"
+        printf '\n'
+
+    else
+        file "$tmp"
+    fi
+
+    exit 0
+fi
+
+if [[ "$type" =~ =binary ]]; then
+    file "$tmp"
+    exit 0
+fi
+
+if command -v bat >/dev/null 2>&1; then
+    bat \
+        --style="${BAT_STYLE:-numbers}" \
+        --color=always \
+        --pager=never \
+        -- "$tmp"
+else
+    cat "$tmp"
+fi
