@@ -10,7 +10,6 @@ selected="$(
     printf '%s\n' "$list" |
         fzf \
             --no-sort \
-            --tac \
             --layout=reverse \
             --height=100% \
             --border=rounded \
