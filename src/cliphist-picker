@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -xu
+set -u
 
 list="$(cliphist list)"
 
